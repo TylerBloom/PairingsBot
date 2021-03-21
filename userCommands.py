@@ -485,28 +485,57 @@ async def misfortune( ctx, num = "" ):
         del( listOfMisfortunes[count] )
 
 
-commandSnippets["flip-coins"] = f'- flip-coins : Flips coins for you (limit of {MAX_COIN_FLIPS} coins)' 
-commandCategories["misc"].append( "flip-coins" )
+commandSnippets["flip-coins"] = f'- flip-coins : Flips coins for you (limit of {MAX_COIN_FLIPS} coins). Can simulate Krark\'s Thumb by adding \'thumb\' after the number.'
+commandCategories["misc"].append("flip-coins")
 @bot.command(name='flip-coins')
-async def flipCoin( ctx, num ):
+async def flipCoin(ctx, num, thumb=''):
     try:
-        num = int( num.strip() )
+        num = int(num.strip())
     except:
-        await ctx.send( f'{ctx.message.author.mention}, you need to specify a number of coins to flip (using digits, not words).' )
+        await ctx.send(f'{ctx.message.author.mention}, you need to specify a number of coins to flip (using digits, not words).')
         return
-    
-    if num > MAX_COIN_FLIPS:
-        await ctx.send( f'{ctx.message.author.mention}, you specified too many coins. I can flip at most {MAX_COIN_FLIPS} at a time. I will flip that many, but you still need to have {num - MAX_COIN_FLIPS} flipped.' )
-        num = MAX_COIN_FLIPS
-    
-    count = 0
-    tmp = getrandbits( num )
-    for i in range( num ):
-        if 1<<i & tmp != 0:
-            count += 1
-    
-    await ctx.send( f'{ctx.message.author.mention}, out of {num} coin flip{"" if num == 1 else "s"} you won {count} time{"" if count == 1 else "s"}.' )
 
+    thumb = thumb.lower()
+    if thumb not in ['', 'thumb']:
+        await ctx.send(f'{ctx.message.author.mention}, you may only specify \'thumb\' or nothing after the number.')
+        return
+
+    if not thumb:
+
+        if num > MAX_COIN_FLIPS:
+            await ctx.send(f'{ctx.message.author.mention}, you specified too many coins. I can flip at most {MAX_COIN_FLIPS} at a time. I will flip that many, but you still need to have {num - MAX_COIN_FLIPS} flipped.')
+            num = MAX_COIN_FLIPS
+
+        count = 0
+        tmp = getrandbits(num)
+        for i in range(num):
+            if 1 << i & tmp != 0:
+                count += 1
+
+        await ctx.send(f'{ctx.message.author.mention}, out of {num} coin flip{plural(num)} you won {count} time{plural(count)}.')
+
+    else:
+        if num > MAX_COIN_FLIPS // 2:
+            await ctx.send(f'{ctx.message.author.mention}, you specified too many coins. I can flip at most {MAX_COIN_FLIPS} at a time, or {MAX_COIN_FLIPS//2} double-flips. I will flip that many, but you still need to have {num - MAX_COIN_FLIPS//2} double-flipped.')
+            num = MAX_COIN_FLIPS // 2
+
+        wins = 0
+        losses = 0
+        choices = 0
+        bits = getrandbits(num * 2)
+        for i in range(num):
+            result = bits >> (2*i) & 3
+            if result == 3:
+                wins += 1
+            elif result == 0:
+                losses += 1
+            else:
+                choices += 1
+
+        await ctx.send(f'{ctx.message.author.mention}, out of {num} double-flip{plural(num)}, you won {wins} time{plural(wins)}, lost {losses} time{plural(losses)}, and may choose the result of the remaining {choices}.')
+
+def plural(n):
+    return "" if n == 1 else "s"
 
 commandSnippets["decklist"] = "- decklist : Posts one of your decklists" 
 commandCategories["misc"].append( "decklist" )
