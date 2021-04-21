@@ -615,7 +615,10 @@ class tournament:
         if message != "":
             await self.pairingsChannel.send( message )
 
-    def saveTournament( self, a_dirName: str = "" ) -> None:
+    def saveTournament( self, a_unsafe_dirName: str = "" ) -> None:        
+        a_dirName = a_unsafe_dirName.replace("\.\./", "") 
+        #Check on folder creation, event though input should be safe
+        
         if a_dirName == "":
             a_dirName = self.saveLocation
         if not (os.path.isdir( f'{a_dirName}' ) and os.path.exists( f'{a_dirName}' )):
@@ -629,22 +632,22 @@ class tournament:
             a_filename = f'{self.saveLocation}/overview.xml'
         digest  = "<?xml version='1.0'?>\n"
         digest += '<tournament>\n'
-        digest += f'\t<name>{self.tournName}</name>\n'
-        digest += f'\t<guild id="{self.guild.id if type(self.guild) == discord.Guild else str()}">{self.hostGuildName}</guild>\n'
-        digest += f'\t<role id="{self.role.id if type(self.role) == discord.Role else str()}"/>\n'
-        digest += f'\t<format>{self.format}</format>\n'
-        digest += f'\t<regOpen>{self.regOpen}</regOpen>\n'
-        digest += f'\t<status started="{self.tournStarted}" ended="{self.tournEnded}" canceled="{self.tournCancel}"/>\n'
-        digest += f'\t<deckCount>{self.deckCount}</deckCount>\n'
-        digest += f'\t<matchLength>{self.matchLength}</matchLength>\n'
-        digest += f'\t<queue size="{self.playersPerMatch}" threshold="{self.pairingsThreshold}">\n'
+        digest += f'\t<name>{toSafeXML(self.tournName)}</name>\n'
+        digest += f'\t<guild id="{toSafeXML(self.guild.id if type(self.guild) == discord.Guild else str())}">{toSafeXML(self.hostGuildName)}</guild>\n'
+        digest += f'\t<role id="{toSafeXML(self.role.id if type(self.role) == discord.Role else str())}"/>\n'
+        digest += f'\t<format>{toSafeXML(self.format)}</format>\n'
+        digest += f'\t<regOpen>{toSafeXML(self.regOpen)}</regOpen>\n'
+        digest += f'\t<status started="{toSafeXML(self.tournStarted)}" ended="{self.tournEnded}" canceled="{toSafeXML(self.tournCancel)}"/>\n'
+        digest += f'\t<deckCount>{toSafeXML(self.deckCount)}</deckCount>\n'
+        digest += f'\t<matchLength>{toSafeXML(self.matchLength)}</matchLength>\n'
+        digest += f'\t<queue size="{toSafeXML(self.playersPerMatch)}" threshold="{toSafeXML(self.pairingsThreshold)}">\n'
         for level in range(len(self.queue)):
             for plyr in self.queue[level]:
-                digest += f'\t\t<player name="{plyr.name}" priority="{level}"/>\n'
+                digest += f'\t\t<player name="{toSafeXML(plyr.name)}" priority="{toSafeXML(level)}"/>\n'
         digest += f'\t</queue>\n'
         digest += f'\t<queueActivity>\n'
         for act in self.queueActivity:
-            digest += f'\t\t<event player="{act[0]}" time="{act[1]}"/>\n'
+            digest += f'\t\t<event player="{toSafeXML(act[0])}" time="{toSafeXML(act[1])}"/>\n'
         digest += f'\t</queueActivity>\n'
         digest += '</tournament>'
         

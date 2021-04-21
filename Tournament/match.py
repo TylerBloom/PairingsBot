@@ -185,25 +185,25 @@ class match:
         if a_filename == "":
             a_filename = self.saveLocation
         digest  = "<?xml version='1.0'?>\n"
-        digest += f'<match roleID="{self.role.id if type(self.role) == discord.Role else str()}" VC_ID="{self.VC.id if type(self.VC) == discord.VoiceChannel else str()}">\n'
-        digest += f'\t<number>{self.matchNumber}</number>\n'
-        digest += f'\t<timeExtension>{self.timeExtension}</timeExtension>\n'
-        digest += f'\t<stopTimer>{self.stopTimer}</stopTimer>\n'
-        digest += f'\t<startTime>{self.startTime}</startTime>\n'
-        digest += f'\t<endTime>{self.endTime}</endTime>\n'
-        digest += f'\t<status>{self.status}</status>\n'
-        digest += f'\t<winner name="{self.winner}"/>\n'
+        digest += f'<match roleID="{toSafeXML(self.role.id if type(self.role) == discord.Role else str())}" VC_ID="{toSafeXML(self.VC.id if type(self.VC) == discord.VoiceChannel else str())}">\n'
+        digest += f'\t<number>{toSafeXML(self.matchNumber)}</number>\n'
+        digest += f'\t<timeExtension>{toSafeXML(self.timeExtension)}</timeExtension>\n'
+        digest += f'\t<stopTimer>{toSafeXML(self.stopTimer)}</stopTimer>\n'
+        digest += f'\t<startTime>{toSafeXML(self.startTime)}</startTime>\n'
+        digest += f'\t<endTime>{toSafeXML(self.endTime)}</endTime>\n'
+        digest += f'\t<status>{toSafeXML(self.status)}</status>\n'
+        digest += f'\t<winner name="{toSafeXML(self.winner)}"/>\n'
         digest += '\t<activePlayers>\n'
         for player in self.activePlayers:
-            digest += f'\t\t<player name="{player}"/>\n'
+            digest += f'\t\t<player name="{toSafeXML(player)}"/>\n'
         digest += '\t</activePlayers>\n'
         digest += '\t<droppedPlayers>\n'
         for player in self.droppedPlayers:
-            digest += f'\t\t<player name="{player}"/>\n'
+            digest += f'\t\t<player name="{toSafeXML(player)}"/>\n'
         digest += '\t</droppedPlayers>\n'
         digest += '\t<confirmedPlayers>\n'
         for player in self.confirmedPlayers:
-            digest += f'\t\t<player name="{player}"/>\n'
+            digest += f'\t\t<player name="{toSafeXML(player)}"/>\n'
         digest += '\t</confirmedPlayers>\n'
         digest += '</match>'
         with open( a_filename, "w" ) as savefile:

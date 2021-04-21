@@ -287,10 +287,10 @@ class player:
             a_filename = self.saveLocation
         digest  = "<?xml version='1.0'?>\n"
         digest += '<player>\n'
-        digest += f'\t<name>{self.name}</name>\n'
-        digest += f'\t<triceName>{self.triceName}</triceName>\n'
-        digest += f'\t<discord id="{self.discordUser.id if type(self.discordUser) == discord.Member else str()}"/>\n'
-        digest += f'\t<status>{self.status}</status>\n'
+        digest += f'\t<name>{toSafeXML(self.name)}</name>\n'
+        digest += f'\t<triceName>{toSafeXML(self.triceName)}</triceName>\n'
+        digest += f'\t<discord id="{toSafeXML(self.discordUser.id if type(self.discordUser) == discord.Member else str())}"/>\n'
+        digest += f'\t<status>{toSafeXML(self.status)}</status>\n'
         for ident in self.decks:
             digest += self.decks[ident].exportXMLString( '\t' )
         digest += '</player>'
