@@ -214,22 +214,22 @@ class match:
         self.saveLocation = a_filename
         xmlTree = ET.parse( a_filename )
         matchRoot = xmlTree.getroot()
-        self.roleID = matchRoot.attrib["roleID"]
+        self.roleID = fromXML(matchRoot.attrib["roleID"])
         if self.roleID != "":
-            self.roleID = int( self.roleID )
+            self.roleID = int( fromXML( self.roleID ) )
         self.VC_ID = matchRoot.attrib["VC_ID"]
         if self.VC_ID != "":
-            self.VC_ID = int( self.VC_ID )
-        self.matchNumber = int( matchRoot.find( "number" ).text )
-        self.stopTimer = str_to_bool( matchRoot.find("stopTimer").text )
-        self.startTime = matchRoot.find( "startTime" ).text
-        self.endTime = matchRoot.find( "endTime" ).text
-        self.status = matchRoot.find( "status" ).text
-        self.winner = matchRoot.find( "winner" ).attrib["name"]
+            self.VC_ID = int( fromXML( self.VC_ID ) )
+        self.matchNumber = int( fromXML( matchRoot.find( "number" ).text ) )
+        self.stopTimer = str_to_bool( fromXML( matchRoot.find("stopTimer").text ) )
+        self.startTime = matchRoot.find( fromXML( "startTime" ).text )
+        self.endTime = matchRoot.find( fromXML( "endTime" ).text )
+        self.status = matchRoot.find( fromXML( "status" ).text )
+        self.winner = matchRoot.find( fromXML( "winner" ).attrib["name"] )
         for player in matchRoot.find("activePlayers"):
-            self.activePlayers.append( player.attrib["name"] )
+            self.activePlayers.append( fromXML( player.attrib["name"] ) )
         for player in matchRoot.find("droppedPlayers"):
-            self.droppedPlayers.append( player.attrib["name"] )
+            self.droppedPlayers.append( fromXML( player.attrib["name"] ) )
         for player in matchRoot.find("confirmedPlayers"):
-            self.confirmedPlayers.append( player.attrib["name"] )
+            self.confirmedPlayers.append( fromXML( player.attrib["name"] ) )
 
