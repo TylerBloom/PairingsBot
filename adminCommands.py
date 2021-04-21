@@ -22,6 +22,10 @@ async def createTournament( ctx, tourn = "" ):
     if tourn == "":
         await ctx.send( f'{ctx.message.author.mention}, you need to specify what you want the tournament to be called.' )
         return
+    elif not isFolderSafe(tourn):        
+        await ctx.send( f'{ctx.message.author.mention}, you cannot have that as a tournament name.' )
+        return
+    
     if tourn in tournaments:
         await ctx.send( f'{ctx.message.author.mention}, there is already a tournament call {tourn} either on this server or another. Pick a different name.' )
         return

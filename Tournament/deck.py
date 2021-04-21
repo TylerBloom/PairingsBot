@@ -43,11 +43,11 @@ class deck:
     # Functions for exporting a decklist to a xml without creating an xml file.
     # Since decks are contained in the player object, exporting an xml string is more helpful
     def exportXMLString( self, a_indent: str = "" ) -> str:
-        lineStart = f'\n{a_indent}\t'
-        digest = f'{a_indent}<deck ident="{self.ident}">' 
+        lineStart = f'\n{toSafeXML(a_indent)}\t'
+        digest = f'{a_indent}<deck ident="{toSafeXML(self.ident)}">' 
         for card in self.cards:
-            digest += f'{lineStart}<card name="{card}"/>'
-        digest += f'\n{a_indent}</deck>\n'
+            digest += f'{lineStart}<card name="{toSafeXML(card)}"/>'
+        digest += f'\n{toSafeXML(a_indent)}</deck>\n'
         return digest
     
     def importFromETree( self, a_tree: ET ) -> None:
