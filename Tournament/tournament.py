@@ -46,6 +46,9 @@ from .deck import deck
 class tournament:
     def __init__( self, a_tournName: str, a_hostGuildName: str, a_format: str = "EDH" ):
         self.tournName = a_tournName
+        #Safety Checks!!
+        self.tournName.replace("../", "__/")
+        
         self.hostGuildName = a_hostGuildName
         self.format    = a_format
         
