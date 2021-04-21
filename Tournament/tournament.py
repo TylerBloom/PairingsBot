@@ -681,33 +681,33 @@ class tournament:
     def loadOverview( self, a_filename: str ) -> None:
         xmlTree = ET.parse( a_filename )
         tournRoot = xmlTree.getroot() 
-        self.tournName = tournRoot.find( 'name' ).text
-        self.guildID   = int( tournRoot.find( 'guild' ).attrib["id"] )
-        self.roleID    = int( tournRoot.find( 'role' ).attrib["id"] )
-        self.format    = tournRoot.find( 'format' ).text
-        self.deckCount = int( tournRoot.find( 'deckCount' ).text )
+        self.tournName = fromXML(tournRoot.find( 'name' ).text)
+        self.guildID   = int( fromXML(tournRoot.find( 'guild' ).attrib["id"]) )
+        self.roleID    = int( fromXML(tournRoot.find( 'role' ).attrib["id"]) )
+        self.format    = fromXML(tournRoot.find( 'format' ).text)
+        self.deckCount = int( fromXML(tournRoot.find( 'deckCount' ).text) )
 
-        self.regOpen      = str_to_bool( tournRoot.find( 'regOpen' ).text )
-        self.tournStarted = str_to_bool( tournRoot.find( 'status' ).attrib['started'] )
-        self.tournEnded   = str_to_bool( tournRoot.find( 'status' ).attrib['ended'] )
-        self.tournCancel  = str_to_bool( tournRoot.find( 'status' ).attrib['canceled'] )
+        self.regOpen      = str_to_bool( fromXML(tournRoot.find( 'regOpen' ).text ))
+        self.tournStarted = str_to_bool( fromXML(tournRoot.find( 'status' ).attrib['started'] ))
+        self.tournEnded   = str_to_bool( fromXML(tournRoot.find( 'status' ).attrib['ended'] ))
+        self.tournCancel  = str_to_bool( fromXML(tournRoot.find( 'status' ).attrib['canceled'] ))
 
-        self.playersPerMatch = int( tournRoot.find( 'queue' ).attrib['size'] )
-        self.pairingsThreshold = int( tournRoot.find( 'queue' ).attrib['threshold'] )
-        self.matchLength     = int( tournRoot.find( 'matchLength' ).text )
+        self.playersPerMatch = int( fromXML(tournRoot.find( 'queue' ).attrib['size'] ))
+        self.pairingsThreshold = int( fromXML(tournRoot.find( 'queue' ).attrib['threshold'] ))
+        self.matchLength     = int( fromXML(tournRoot.find( 'matchLength' ).text ))
         
         acts    = tournRoot.find( 'queueActivity' ).findall( 'event' )
         for act in acts:
-            self.queueActivity.append( ( act.attrib['player'], act.attrib['time'] ) )
+            self.queueActivity.append( fromXML( act.attrib['player'], act.attrib['time'] ) )
         players = tournRoot.find( 'queue' ).findall( 'player' )
         maxLevel = 1
         for plyr in players:
             if int( plyr.attrib['priority'] ) > maxLevel:
-                maxLevel = int( plyr.attrib['priority'] )
+                maxLevel = int( fromXML(plyr.attrib['priority']) )
         for _ in range(maxLevel):
             self.queue.append( [] )
         for plyr in players:
-            self.queue[int(plyr.attrib['priority'])].append( self.players[ plyr.attrib['name'] ] )
+            self.queue[int(plyr.attrib['priority'])].append( fromXML(self.players[ plyr.attrib['name'] ] ))
         if sum( [ len(level) for level in self.queue ] ) >= self.pairingsThreshold and not self.pairingsThread.is_alive( ):
             self.pairingsThread = threading.Thread( target=self.launch_pairings, args=(self.pairingWaitTime,) )
             self.pairingsThread.start( )
@@ -719,7 +719,7 @@ class tournament:
             newPlayer = player( "" )
             newPlayer.saveLocation = playerFile
             newPlayer.loadXML( playerFile )
-            self.players[newPlayer.name]  = newPlayer
+            self.players[newPlayer.name] = newPlayer
     
     def loadMatches( self, a_dirName: str ) -> None:
         matchFiles = [ f'{a_dirName}/{f}' for f in os.listdir(a_dirName) if os.path.isfile( f'{a_dirName}/{f}' ) ]
