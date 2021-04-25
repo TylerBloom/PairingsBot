@@ -1,4 +1,4 @@
-#Overview
+# Overview
 
 **Currently in development**
 
@@ -21,7 +21,7 @@ Moreover, combining these styles in layers will also be allowed.
 This is something most commonly done with the Mythic Qualifiers that WotC hosts (Day 1 get a 7-2 or better record, Day 2 Swiss).
 
 
-#Setup
+# Setup
 
 To get this bot working on your server, you to only do a few things.
 First, add the bot to your server [here]("https://discord.com/api/oauth2/authorize?client_id=784967512106074183&permissions=268634192&scope=bot").
@@ -50,10 +50,10 @@ It is also generally recommended to have a channel where players' bot commands c
 
 
 
-#Additional Resources
+# Additional Resources
 
 
-#Future Plans
+# Future Plans
 
 
 
