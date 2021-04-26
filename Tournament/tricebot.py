@@ -34,7 +34,7 @@ class TriceBot:
     def kickPlayer(self, gameID: int, name: str) -> int:
         body  = f'authtoken={self.authToken}\n'
         body += f'gameid={gameID}\n'
-        body += f'target{name}'        
+        body += f'target={name}'        
         
         try:
             message = self.req("api/kickplayer", body)   
