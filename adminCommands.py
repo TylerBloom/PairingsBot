@@ -13,44 +13,48 @@ from Tournament import *
 commandSnippets["create-tournament"] = "- create-tournament : Creates a tournament" 
 commandCategories["management"].append("create-tournament")
 @bot.command(name='create-tournament')
-async def createTournament( ctx, tourn = "" ):
-    tourn = tourn.strip()
+async def createTournament( ctx, tournName = None, tournType = None ):
+    mention = ctx.message.author.mention
     if await isPrivateMessage( ctx ): return
 
-    adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
-        await ctx.send( f'{ctx.message.author.mention}, you need to specify what you want the tournament to be called.' )
+    
+    adminMention = getTournamentAdminMention( ctx.message.guild )
+    if tournName is None or tournType is None:
+        await ctx.send( f'{mention}, you need to specify what you want the tournament name and type.' )
         return
-    elif not isPathSafeName(tourn):        
-        await ctx.send( f'{ctx.message.author.mention}, you cannot have that as a tournament name.' )
+    elif isPathSafeName(tournName):        
+        await ctx.send( f'{mention}, you cannot have that as a tournament name.' )
         return
     
-    if tourn in tournaments:
-        await ctx.send( f'{ctx.message.author.mention}, there is already a tournament call {tourn} either on this server or another. Pick a different name.' )
+    if tournName in tournaments:
+        await ctx.send( f'{mention}, there is already a tournament call {tournName} either on this server or another. Pick a different name.' )
         return
     
-    await ctx.message.guild.create_role( name=f'{tourn} Player' )
-    tournaments[tourn] = tournament( tourn, ctx.message.guild.name )
-    tournaments[tourn].saveLocation = f'currentTournaments/{tourn}/'
-    tournaments[tourn].addDiscordGuild( ctx.message.guild )
-    tournaments[tourn].loop = bot.loop
-    tournaments[tourn].saveTournament( f'currentTournaments/{tourn}' )
-    await ctx.send( f'{adminMention}, a new tournament called "{tourn}" has been created by {ctx.message.author.mention}.' )
+    newTourn = getTournamentType( tournType )
+    if newTourn is None:
+        newLine = "\n\t- "
+        await ctx.send( f'{mention}, invalid tournament type of {tournType}. The supported tournament types are:{newLine}{newLine.join(tournamentTypes)}.' )
+        return
+    
+    await ctx.message.guild.create_role( name=f'{tournName} Player' )
+    tournaments[tournName] = newTourn
+    tournaments[tournName].saveLocation = f'currentTournaments/{tournName}/'
+    tournaments[tournName].addDiscordGuild( ctx.message.guild )
+    tournaments[tournName].loop = bot.loop
+    tournaments[tournName].saveTournament( f'currentTournaments/{tournName}' )
+    await ctx.send( f'{adminMention}, a new tournament called "{tournName}" has been created by {ctx.message.author.mention}.' )
     
 
 commandSnippets["update-reg"] = "- update-reg : Opens or closes registration" 
 commandCategories["management"].append("update-reg")
 @bot.command(name='update-reg')
-async def updateReg( ctx, tourn = "", status = "" ):
-    tourn  = tourn.strip()
-    status = status.strip()
-    
+async def updateReg( ctx, tourn = None, status = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or status == "":
+    if tourn is None or status is None:
         await ctx.send( f'{ctx.message.author.mention}, it appears that you did not give enough information. You need to first state the tournament name and then "true" or "false".' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -67,13 +71,12 @@ async def updateReg( ctx, tourn = "", status = "" ):
 commandSnippets["start-tournament"] = "- start-tournament : Starts the tournament, which closes registration and let's players LFG" 
 commandCategories["management"].append("start-tournament")
 @bot.command(name='start-tournament')
-async def startTournament( ctx, tourn = "" ):
-    tourn = tourn.strip()
+async def startTournament( ctx, tourn = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
+    if tourn is None:
         await ctx.send( f'{ctx.message.author.mention}, you need to specify what tournament you want to start.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -90,13 +93,12 @@ async def startTournament( ctx, tourn = "" ):
 commandSnippets["end-tournament"] = "- end-tournament : Ends a tournament that's been started" 
 commandCategories["management"].append("end-tournament")
 @bot.command(name='end-tournament')
-async def endTournament( ctx, tourn = "" ):
-    tourn = tourn.strip()
+async def endTournament( ctx, tourn = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
+    if tourn is None:
         await ctx.send( f'{ctx.message.author.mention}, you need to specify what tournament you want to end.' )
         return
     if not tourn in tournaments:
@@ -119,13 +121,12 @@ async def endTournament( ctx, tourn = "" ):
 commandSnippets["cancel-tournament"] = "- cancel-tournament : Ends any tournament" 
 commandCategories["management"].append("cancel-tournament")
 @bot.command(name='cancel-tournament')
-async def cancelTournament( ctx, tourn = "" ):
-    tourn = tourn.strip()
+async def cancelTournament( ctx, tourn = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
+    if tourn is None:
         await ctx.send( f'{ctx.message.author.mention}, you need to specify what tournament you want to cancel.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -144,14 +145,12 @@ async def cancelTournament( ctx, tourn = "" ):
 commandSnippets["set-deck-count"] = "- set-deck-count : Sets the number of decks a player can have after pruning" 
 commandCategories["properties"].append("set-deck-count")
 @bot.command(name='set-deck-count')
-async def setDeckCount( ctx, tourn = "", count = "" ):
-    tourn = tourn.strip()
-    count = count.strip()
+async def setDeckCount( ctx, tourn = None, count = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or count == "" :
+    if tourn is None or count is None :
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament and a max number of decks.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -166,13 +165,12 @@ async def setDeckCount( ctx, tourn = "", count = "" ):
 commandSnippets["prune-decks"] = "- prune-decks : Removes decks from players until they have the max number" 
 commandCategories["day-of"].append("prune-decks")
 @bot.command(name='prune-decks')
-async def adminPruneDecks( ctx, tourn = "" ):
-    tourn = tourn.strip()
+async def adminPruneDecks( ctx, tourn = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
+    if tourn is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -190,13 +188,12 @@ async def adminPruneDecks( ctx, tourn = "" ):
 commandSnippets["prune-players"] = "- prune-players : Drops players that didn't submit a deck" 
 commandCategories["day-of"].append("prune-players")
 @bot.command(name='prune-players')
-async def adminPruneDecks( ctx, tourn = "" ):
-    tourn = tourn.strip()
+async def adminPruneDecks( ctx, tourn = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
+    if tourn is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -214,15 +211,12 @@ async def adminPruneDecks( ctx, tourn = "" ):
 commandSnippets["create-match"] = "- create-match : Creates a match" 
 commandCategories["day-of"].append("create-match")
 @bot.command(name='create-match')
-async def adminCreatePairing( ctx, tourn = "", *plyrs ):
-    tourn  = tourn.strip()
-    plyrs  = [ plyr.strip() for plyr in plyrs ]
-    
+async def adminCreatePairing( ctx, tourn = None, *plyrs ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
+    if tourn is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament, match number, player, and result in order to remove a player from a match.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -251,14 +245,13 @@ async def adminCreatePairing( ctx, tourn = "", *plyrs ):
 commandSnippets["create-pairings-list"] = "- create-pairings-list : Creates a list of possible match pairings (unweighted)" 
 commandCategories["day-of"].append("create-pairings-list")
 @bot.command(name='create-pairings-list')
-async def createPairingsList( ctx, tourn = "" ):
-    tourn  = tourn.strip()
+async def createPairingsList( ctx, tourn = None ):
     
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
+    if tourn is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament, match number, player, and result in order to remove a player from a match.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -370,15 +363,12 @@ async def createPairingsList( ctx, tourn = "" ):
 commandSnippets["set-pairing-threshold"] = "- set-pairing-threshold : Sets the number of players needed to pair the queue" 
 commandCategories["properties"].append("set-pairing-threshold")
 @bot.command(name='set-pairing-threshold')
-async def pairingsThreshold( ctx, tourn = "", num = "" ):
-    tourn  = tourn.strip()
-    num    = num.strip()
-    
+async def pairingsThreshold( ctx, tourn = None, num = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or num == "":
+    if tourn is None or num is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament and a number of players for a match.' )
         return
     try:
@@ -399,15 +389,12 @@ async def pairingsThreshold( ctx, tourn = "", num = "" ):
 commandSnippets["set-match-size"] = "- set-match-size : Sets the number of players needed for a match" 
 commandCategories["properties"].append("set-match-size")
 @bot.command(name='set-match-size')
-async def playersPerMatch( ctx, tourn = "", num = "" ):
-    tourn  = tourn.strip()
-    num    = num.strip()
-    
+async def playersPerMatch( ctx, tourn = None, num = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or num == "":
+    if tourn is None or num is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament and a number of players for a match.' )
         return
     try:
@@ -428,15 +415,12 @@ async def playersPerMatch( ctx, tourn = "", num = "" ):
 commandSnippets["set-match-length"] = "- set-match-length : Sets the amount of time for a match (in minutes)" 
 commandCategories["properties"].append("set-match-length")
 @bot.command(name='set-match-length')
-async def setMatchLength( ctx, tourn = "", num = "" ):
-    tourn  = tourn.strip()
-    num    = num.strip()
-    
+async def setMatchLength( ctx, tourn = None, num = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or num == "":
+    if tourn is None or num is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament and a length in minutes.' )
         return
     try:
@@ -457,15 +441,12 @@ async def setMatchLength( ctx, tourn = "", num = "" ):
 commandSnippets["admin-drop"] = "- admin-drop : Removes a player for a tournament" 
 commandCategories["day-of"].append("admin-drop")
 @bot.command(name='admin-drop')
-async def adminDropPlayer( ctx, tourn = "", plyr = "" ):
-    tourn = tourn.strip()
-    plyr  =  plyr.strip()
-
+async def adminDropPlayer( ctx, tourn = None, plyr = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or plyr == "":
+    if tourn is None or plyr is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament and a player.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -473,7 +454,7 @@ async def adminDropPlayer( ctx, tourn = "", plyr = "" ):
     if await isTournDead( tourn, ctx ): return
     
     member = findPlayer( ctx.guild, tourn, plyr )
-    if member == "":
+    if member is None:
         await ctx.send( f'{ctx.message.author.mention}, a player by "{plyr}" could not be found in the player role for {tourn}. Please verify that they have registered.' )
         return
 
@@ -493,15 +474,12 @@ async def adminDropPlayer( ctx, tourn = "", plyr = "" ):
 commandSnippets["give-bye"] = "- give-bye : Grants a bye to a player" 
 commandCategories["day-of"].append("give-bye")
 @bot.command(name='give-bye')
-async def adminGiveBye( ctx, tourn = "", plyr = "" ):
-    tourn = tourn.strip()
-    plyr  =  plyr.strip()
-
+async def adminGiveBye( ctx, tourn = None, plyr = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or plyr == "":
+    if tourn is None or plyr is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament and a player.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -509,7 +487,7 @@ async def adminGiveBye( ctx, tourn = "", plyr = "" ):
     if await isTournDead( tourn, ctx ): return
     
     member = findPlayer( ctx.guild, tourn, plyr )
-    if member == "":
+    if member is None:
         await ctx.send( f'{ctx.message.author.mention}, a player by "{plyr}" could not be found in the player role for {tourn}. Please verify that they have registered.' )
         return
 
@@ -531,15 +509,12 @@ async def adminGiveBye( ctx, tourn = "", plyr = "" ):
 commandSnippets["remove-match"] = "- remove-match : Removes a match" 
 commandCategories["day-of"].append("remove-match")
 @bot.command(name='remove-match')
-async def adminRemoveMatch( ctx, tourn = "", mtch = "" ):
-    tourn = tourn.strip()
-    mtch  =  mtch.strip()
-
+async def adminRemoveMatch( ctx, tourn = None, mtch = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or mtch == "":
+    if tourn is None or mtch is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament and a player.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -567,14 +542,12 @@ async def adminRemoveMatch( ctx, tourn = "", mtch = "" ):
 commandSnippets["view-queue"] = "- view-queue : Prints the currect matchmaking queue" 
 commandCategories["day-of"].append("view-queue")
 @bot.command(name='view-queue')
-async def viewQueue( ctx, tourn = "" ):
-    tourn = tourn.strip()
-
+async def viewQueue( ctx, tourn = None ):
     if await isPrivateMessage( ctx ): return
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
-    if tourn == "":
+    if tourn is None:
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament to view the queue.' )
         return
     if not await checkTournExists( tourn, ctx ): return
@@ -605,7 +578,7 @@ async def viewQueue( ctx, tourn = "" ):
 """
 
 @bot.command(name='tournament-report')
-async def adminDropPlayer( ctx, tourn = "" ):
+async def adminDropPlayer( ctx, tourn = None ):
 
 """
 
