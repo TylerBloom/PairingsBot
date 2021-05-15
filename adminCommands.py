@@ -20,7 +20,8 @@ async def createTournament( ctx, tourn = "", triceBotEnabledIn = ""):
     if tourn == "":
         await ctx.send( f'{ctx.message.author.mention}, you need to specify what you want the tournament to be called.' )
         return
-    elif not isFolderSafe(tourn):        
+
+    elif not isPathSafeName(tourn):    
         await ctx.send( f'{ctx.message.author.mention}, you cannot have that as a tournament name.' )
         return
     
@@ -361,6 +362,13 @@ async def adminCreatePairing( ctx, tourn = "", *plyrs ):
 
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
+    
+    # Check for duplicate players
+    for i in range(len(plyrs)-1):
+         if plyrs[i] in plyrs[i+1:]:
+            await ctx.send( f'{ctx.message.author.mention}, you cannot add the same person to a match more than once.' )
+            return
+    
     if tourn == "":
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament, match number, player, and result in order to remove a player from a match.' )
         return
@@ -376,23 +384,12 @@ async def adminCreatePairing( ctx, tourn = "", *plyrs ):
         await ctx.send( f'{ctx.message.author.mention}, at least one of the members that you specified is not a part of the tournament. Verify that they have the "{tourn} Player" role.' )
         return
     
-    userIdents = [ getUserIdent( member ) for member in members ]
-    for userIdent in userIdents:
-        if not userIdent in tournaments[tourn].players:
+    for member in members:
+        if not getUserIdent(member) in tournaments[tourn].players:
             await ctx.send( f'{ctx.message.author.mention}, a user by "{member.mention}" was found in the player role, but they are not active in {tourn}. Make sure they are registered or that they have not dropped.' )
             return
     
-    for ident in userIdents:
-        found = False
-        for lvl in tournaments[tourn].queue:
-            if ident in lvl:
-                found = True
-                del( lvl[lvl.index(ident)] )
-                break
-        if not found:
-            tournaments[tourn].queueActivity.append( (ident, datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f') ) )
-    
-    await tournaments[tourn].addMatch( userIdents )
+    await tournaments[tourn].addMatch( [ getUserIdent(member) for member in members ] )
     tournaments[tourn].matches[-1].saveXML( )
     tournaments[tourn].saveOverview( )
     await ctx.send( f'{ctx.message.author.mention}, the players you specified for the match are now paired. Their match number is #{tournaments[tourn].matches[-1].matchNumber}.' )

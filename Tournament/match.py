@@ -49,6 +49,7 @@ class match:
         self.status = "open"
         self.winner = ""
 
+        self.matchLength   = 60*60 # Time is in seconds
         self.timeExtension = 0
         self.timer     = ""
         self.startTime = getTime( )        
@@ -58,6 +59,9 @@ class match:
         self.triceMatch = False
         self.gameID = -1
         self.replayURL = ""
+        self.sentOneMinWarning  = False
+        self.sentFiveMinWarning = False
+        self.sentFinalWarning   = False
         
         self.stopTimer = False
     
@@ -82,14 +86,26 @@ class match:
     def isCertified( self ):
         return self.status == "certified"
     
-    def getTimeElapsed( self ) -> int:
+    def getTimeLeft( self ) -> int:
         if self.isCertified() or self.stopTimer:
             return -1
-        digest = round(timeDiff( getTime(), self.startTime ) - self.timeExtension)
-        if digest < 0:
-            return 0
-        else:
-            return round(digest/60)
+        return self.matchLength - round(self.getTimeElapsed()) + self.timeExtension
+        
+    def getTimeElapsed( self ) -> float:
+        if self.isCertified() or self.stopTimer:
+            return -1
+        return timeDiff( getTime(), self.startTime )
+    
+    def giveTimeExtension( self, t: int ) -> None:
+        if self.isCertified() or self.stopTimer:
+            return None
+        timeLeft = self.getTimeLeft()
+        if timeLeft + t > 300 and self.sentFiveMinWarning:
+            self.sentFiveMinWarning = False
+        if timeLeft + t >  60 and self.sentOneMinWarning:
+            self.sentOneMinWarning = False
+        self.timeExtension += t
+        
     
     def addMatchRole( self, a_role: discord.Role ) -> None:
         self.role = a_role
@@ -116,6 +132,11 @@ class match:
         self.status = "dead"
         self.endTime = getTime( )
         self.stopTimer = True
+    
+    def getMention( self ):
+        if type(self.role) == discord.Role:
+            return self.role.mention
+        return f'Match #{self.matchNumber}'
 
  
     async def confirmMatch( self ) -> bool:
@@ -144,7 +165,7 @@ class match:
             else:
                 self.winner = self.activePlayers[0]
             self.confirmedPlayers.append( self.winner )
-            return f'{self.role.mention}, your match has been certified. You can join the matchmaking queue again.'
+            return f'{self.getMention()}, your match has been certified. You can join the matchmaking queue again.'
         else:
             return ""
     
@@ -192,6 +213,7 @@ class match:
         digest  = "<?xml version='1.0'?>\n"
         digest += f'<match roleID="{toSafeXML(self.role.id if type(self.role) == discord.Role else str())}" VC_ID="{toSafeXML(self.VC.id if type(self.VC) == discord.VoiceChannel else str())}">\n'
         digest += f'\t<number>{toSafeXML(self.matchNumber)}</number>\n'
+        digest += f'\t<matchLength>{self.matchLength}</matchLength>\n'
         digest += f'\t<timeExtension>{toSafeXML(self.timeExtension)}</timeExtension>\n'
         digest += f'\t<stopTimer>{toSafeXML(self.stopTimer)}</stopTimer>\n'
         digest += f'\t<startTime>{toSafeXML(self.startTime)}</startTime>\n'
@@ -200,6 +222,8 @@ class match:
         digest += f'\t<triceMatch>{toSafeXML(self.triceMatch)}</triceMatch>\n'
         digest += f'\t<gameID>{toSafeXML(self.gameID)}</gameID>\n'
         digest += f'\t<replayURL>{toSafeXML(self.replayURL)}</replayURL>\n'
+        digest += f'\t<sentWarnings oneMin="{self.sentOneMinWarning}" fiveMin="{self.sentFiveMinWarning}" final="{self.sentFinalWarning}"/>\n'
+        digest += f'\t<status>{toSafeXML(self.status)}</status>\n'
         digest += f'\t<winner name="{toSafeXML(self.winner)}"/>\n'
         digest += '\t<activePlayers>\n'
         for player in self.activePlayers:
@@ -236,6 +260,16 @@ class match:
         self.triceMatch = fromXML( matchRoot.find(  "triceMatch" ).text )
         self.gameID = fromXML( matchRoot.find(  "gameID" ).text )
         self.replayURL = fromXML( matchRoot.find(  "replayURL" ).text )
+        self.matchNumber   = int( fromXML( matchRoot.find( "number" ).text ) )
+        self.timeExtension = int( fromXML( matchRoot.find("timeExtension").text ) )
+        self.matchLength   = int( fromXML( matchRoot.find( "matchLength" ).text ) )
+        self.stopTimer = str_to_bool( fromXML( matchRoot.find("stopTimer").text ) )
+        self.startTime = fromXML( matchRoot.find( "startTime") .text )
+        self.endTime = fromXML( matchRoot.find( "endTime" ).text )
+        self.status = fromXML( matchRoot.find(  "status" ).text )
+        self.sentOneMinWarning  = str_to_bool( fromXML( matchRoot.find( "sentWarnings" ).attrib["oneMin" ] ) )
+        self.sentFiveMinWarning = str_to_bool( fromXML( matchRoot.find( "sentWarnings" ).attrib["fiveMin"] ) )
+        self.sentFinalWarning   = str_to_bool( fromXML( matchRoot.find( "sentWarnings" ).attrib["final"  ] ) )
         self.winner = fromXML( matchRoot.find( "winner" ).attrib["name"] )
         for player in matchRoot.find("activePlayers"):
             self.activePlayers.append( fromXML( player.attrib["name"] ) )

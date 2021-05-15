@@ -233,15 +233,13 @@ class player:
             return f'{author}, the deck {a_ident} has been removed from {self.discordUser.mention}.' 
         return f'{self.discordUser.mention}, your decklist whose name or deck hash was "{a_ident}" has been deleted.'
     
-    def getDeckIdent( self, a_ident: str = "" ) -> str:
-        if a_ident in self.decks:
-            return a_ident
-        digest = ""
-        for ident in self.decks:
-            if a_ident == self.decks[ident].deckHash:
-                digest = ident
-                break
-        return digest
+    def getDeckName( self, ident: str = "" ) -> str:
+        if ident in self.decks:
+            return ident
+        for name in self.decks:
+            if ident == self.decks[name].deckHash:
+                return name
+        return ""
     
     def getCertMatches( self, withBye: bool=True ):
         digest = [ ]
@@ -258,13 +256,13 @@ class player:
         certMatches = self.getCertMatches( withBye )
         for mtch in certMatches:
             if mtch.winner == self.name:
-                digest += 4
+                digest += 3 #4
             elif mtch.isDraw():
-                digest += 0.5
+                digest += 1 #0.5
             elif withBye and mtch.isBye():
                 digest += 1
             else:
-                digest += -2.25
+                digest += 0 #-2.25
         return digest
     
     # Calculates the percentage of game the player has won
