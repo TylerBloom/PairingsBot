@@ -108,7 +108,7 @@ async def checkTournExists( tourn, ctx, send: bool = True ) -> bool:
     return digest
 
 async def correctGuild( tourn, ctx, send: bool = True ) -> bool:
-    digest = ( tournaments[tourn].hostGuildName == ctx.message.guild.name )
+    digest = ( tournaments[tourn].guild.id == ctx.message.guild.id )
     if not digest and send:
         await ctx.send( f'{ctx.message.author.mention}, this server is not hosting {tourn}. Please send your command in the correct server.' )
     return digest
