@@ -75,7 +75,7 @@ def isPathSafeName(name: str) -> bool:
     digest = ("~" in name) or ("../" in name)
     for c in problem_chars:
         digest |= (c in name)
-    return digest
+    return not digest
 
 def toSafeXML( input_XML: str ) -> str:
     digest = str(input_XML)
