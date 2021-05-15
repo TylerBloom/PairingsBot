@@ -224,17 +224,10 @@ async def adminCreatePairing( ctx, tourn = "", *plyrs ):
     if not await isTournamentAdmin( ctx ): return
     
     # Check for duplicate players
-    duplicates = False
-    for i in range(0, len(plyrs)):
-        for j in range(i + 1, len(plyrs)):
-            if plyrs[i] == plyrs[j]:
-                duplicates = True
-                break
-        if duplicates:
-            break
-    if duplicates:
-        await ctx.send( f'{ctx.message.author.mention}, you cannot add the same person to a match more than once.' )
-        return
+    for i in range(len(plyrs)-1):
+         if plyrs[i] in plyrs[i+1:]:
+            await ctx.send( f'{ctx.message.author.mention}, you cannot add the same person to a match more than once.' )
+            return
     
     if tourn == "":
         await ctx.send( f'{ctx.message.author.mention}, you did not provide enough information. You need to specify a tournament, match number, player, and result in order to remove a player from a match.' )
