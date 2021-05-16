@@ -162,11 +162,7 @@ async def submitDecklist( ctx, tourn = "", ident = "" ):
         await ctx.send( f'{ctx.message.author.mention}, registration for {tourn} is closed. If you believe this is an error, contact tournament staff.' )
         return
     
-    try:
-        message = tournaments[tourn].players[userIdent].addDeck( ident, decklist )
-    except:
-        await ctx.send( f'{ctx.message.author.mention}, there was an error while processing your deck list. Make sure you follow the instructions. To find them, use !squirebot-help add-deck' )
-        return
+    message = tournaments[tourn].addDeck( userIdent, ident, decklist )
     await ctx.send( f'{ctx.message.author.mention}, {message}' )
     if not private:
         await ctx.author.send( f'For future reference, you can submit your decklist via private message so that you do not have to publicly post your decklist.' )
