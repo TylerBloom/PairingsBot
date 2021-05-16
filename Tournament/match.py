@@ -250,9 +250,9 @@ class match:
             self.roleID = int( fromXML( self.roleID ) )
         self.VC_ID = matchRoot.attrib["VC_ID"]
         if self.VC_ID != "":
+            self.VC_ID = int( fromXML( self.VC_ID ) )
         self.replayURL = fromXML( matchRoot.find(  "replayURL" ).text )
         self.gameID = fromXML( matchRoot.find(  "gameID" ).text )
-            self.VC_ID = int( fromXML( self.VC_ID ) )
         self.matchNumber   = int( fromXML( matchRoot.find( "number" ).text ) )
         self.timeExtension = int( fromXML( matchRoot.find("timeExtension").text ) )
         self.matchLength   = int( fromXML( matchRoot.find( "matchLength" ).text ) )
