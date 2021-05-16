@@ -237,6 +237,7 @@ class tournament:
         self.players[plyr].saveXML( )
         deckHash = self.players[plyr].decks[deckName].deckHash
         return f'your deck has been successfully registered in {self.tournName}. Your deck name is "{deckName}", and the deck hash is "{deckHash}". Make sure it matches your deck hash in Cockatrice. You can see your decklist by using !decklist "{deckName}" or !decklist {deckHash}.'
+        
     
     # ---------------- Tournament Status ---------------- 
 
@@ -688,6 +689,8 @@ class tournament:
             self.pairingsThread.start( )
         
         return
+
+
 
     # ---------------- XML Saving/Loading ---------------- 
     def saveTournament( self, dirName: str = "" ) -> None:        

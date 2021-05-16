@@ -102,7 +102,7 @@ class TriceBot:
                 value = ""
                 for i in range(1, len(parts)):
                     value += parts[i]
-                    if i != len(parts -1):
+                    if i != len(parts) - 1:
                         value += "="
                     
                 if tag == "gameid":
