@@ -724,12 +724,12 @@ class tournament:
         digest += f'\t<matchLength>{toSafeXML(self.matchLength)}</matchLength>\n'
         
         # Save tricebot settings under a tricebot tag
-        digest += f'\t\t<triceBotEnabled>{toSafeXML(self.triceBotEnabled)}</triceBotEnabled>\n'
-        digest += f'\t\t<spectatorsAllowed>{toSafeXML(self.spectators_allowed)}</spectatorsAllowed>\n'
-        digest += f'\t\t<spectatorsNeedPassword>{toSafeXML(self.spectators_need_password)}</spectatorsNeedPassword>\n'
-        digest += f'\t\t<spectatorsCanChat>{toSafeXML(self.spectators_can_chat)}</spectatorsCanChat>\n'
-        digest += f'\t\t<spectatorsCanSeeHands>{toSafeXML(self.spectators_can_see_hands)}</spectatorsCanSeeHands>\n'
-        digest += f'\t\t<onlyRegistered>{toSafeXML(self.only_registered)}</onlyRegistered>\n'
+        digest += f'\t<triceBotEnabled>{toSafeXML(self.triceBotEnabled)}</triceBotEnabled>\n'
+        digest += f'\t<spectatorsAllowed>{toSafeXML(self.spectators_allowed)}</spectatorsAllowed>\n'
+        digest += f'\t<spectatorsNeedPassword>{toSafeXML(self.spectators_need_password)}</spectatorsNeedPassword>\n'
+        digest += f'\t<spectatorsCanChat>{toSafeXML(self.spectators_can_chat)}</spectatorsCanChat>\n'
+        digest += f'\t<spectatorsCanSeeHands>{toSafeXML(self.spectators_can_see_hands)}</spectatorsCanSeeHands>\n'
+        digest += f'\t<onlyRegistered>{toSafeXML(self.only_registered)}</onlyRegistered>\n'
         
         digest += f'\t<queue size="{toSafeXML(self.playersPerMatch)}" threshold="{toSafeXML(self.pairingsThreshold)}">\n'
         for level in range(len(self.queue)):
