@@ -30,7 +30,7 @@ from .utils import *
 
 class match:
     # The class constructor
-    def __init__( self, a_players: List[str] ):
+    def __init__( self, a_players: List[str]):
         self.saveLocation = ""
 
         self.matchNumber = -1
@@ -41,7 +41,7 @@ class match:
         
         self.misfortunes = { }
 
-        self.role   = ""
+        self.role   = None
         self.roleID = ""
         self.VC     = ""
         self.VC_ID  = ""
@@ -52,9 +52,13 @@ class match:
         self.matchLength   = 60*60 # Time is in seconds
         self.timeExtension = 0
         self.timer     = ""
-        self.startTime = getTime( )
+        self.startTime = getTime( )        
         self.endTime   = ""
         
+        # Only changed if it is a trice match
+        self.triceMatch = False
+        self.gameID = -1
+        self.replayURL = ""
         self.sentOneMinWarning  = False
         self.sentFiveMinWarning = False
         self.sentFinalWarning   = False
@@ -214,6 +218,10 @@ class match:
         digest += f'\t<stopTimer>{toSafeXML(self.stopTimer)}</stopTimer>\n'
         digest += f'\t<startTime>{toSafeXML(self.startTime)}</startTime>\n'
         digest += f'\t<endTime>{toSafeXML(self.endTime)}</endTime>\n'
+        digest += f'\t<status>{toSafeXML(self.status)}</status>\n'
+        digest += f'\t<triceMatch>{toSafeXML(self.triceMatch)}</triceMatch>\n'
+        digest += f'\t<gameID>{toSafeXML(self.gameID)}</gameID>\n'
+        digest += f'\t<replayURL>{toSafeXML(self.replayURL)}</replayURL>\n'
         digest += f'\t<sentWarnings oneMin="{self.sentOneMinWarning}" fiveMin="{self.sentFiveMinWarning}" final="{self.sentFinalWarning}"/>\n'
         digest += f'\t<status>{toSafeXML(self.status)}</status>\n'
         digest += f'\t<winner name="{toSafeXML(self.winner)}"/>\n'
@@ -244,6 +252,14 @@ class match:
         self.VC_ID = matchRoot.attrib["VC_ID"]
         if self.VC_ID != "":
             self.VC_ID = int( fromXML( self.VC_ID ) )
+        self.matchNumber = int( fromXML( matchRoot.find( "number" ).text ) )
+        self.stopTimer = str_to_bool( fromXML( matchRoot.find("stopTimer").text ) )
+        self.startTime = fromXML( matchRoot.find( "startTime") .text )
+        self.endTime = fromXML( matchRoot.find( "endTime" ).text )
+        self.status = fromXML( matchRoot.find(  "status" ).text )                
+        self.triceMatch = fromXML( matchRoot.find(  "triceMatch" ).text )
+        self.gameID = fromXML( matchRoot.find(  "gameID" ).text )
+        self.replayURL = fromXML( matchRoot.find(  "replayURL" ).text )
         self.matchNumber   = int( fromXML( matchRoot.find( "number" ).text ) )
         self.timeExtension = int( fromXML( matchRoot.find("timeExtension").text ) )
         self.matchLength   = int( fromXML( matchRoot.find( "matchLength" ).text ) )

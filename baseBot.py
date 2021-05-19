@@ -8,7 +8,7 @@ from discord import Activity, ActivityType
 from discord.ext import commands
 from dotenv import load_dotenv
 
-
+from tricebot import TriceBot
 from Tournament import *
 
 commandSnippets = { } 
@@ -94,6 +94,7 @@ async def isAdmin( ctx, send: bool = True ) -> bool:
 
 async def isTournamentAdmin( ctx, send: bool = True ) -> bool:
     digest = False
+    
     adminMention = getTournamentAdminMention( ctx.message.guild )
     for role in ctx.message.author.roles:
         digest |= str(role).lower() == "tournament admin"
@@ -284,7 +285,6 @@ def splitMessage( msg: str, limit: int = 2000, delim: str = "\n" ) -> List[str]:
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-
 MAX_COIN_FLIPS = int( os.getenv('MAX_COIN_FLIPS') )
 
 random.seed( )
@@ -292,7 +292,7 @@ random.seed( )
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-tournaments = {}
+tournaments = { }
 
 # A dictionary indexed by user idents and consisting of creation time, duration, and a coro to be awaited
 commandsToConfirm = { }
@@ -300,10 +300,16 @@ commandsToConfirm = { }
 # A list of matches that we currently resolving Wheel of Misfortune
 listOfMisfortunes = [ ]
 
-playersToBeDropped = []
+playersToBeDropped = [ ]
 
 savedTournaments = [ f'currentTournaments/{d}' for d in os.listdir( "currentTournaments" ) if os.path.isdir( f'currentTournaments/{d}' ) ]
 
+
+def isFolderSafe(name: str) -> bool:
+    #bad chars are xml chars and "../" as it is a directory buggerer
+    if (name.replace("/", "") != name):
+        return False
+    return True
 
 # When ready, the bot needs to looks at each pre-loaded tournament and add a discord user to each player.
 @bot.event

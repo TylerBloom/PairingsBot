@@ -8,6 +8,8 @@ import discord
 import asyncio
 import warnings
 
+from tricebot import TriceBot
+
 from typing import List
 from typing import Tuple
 
@@ -15,6 +17,20 @@ from .utils import *
 from .match import match
 from .player import player
 from .deck import deck
+from dotenv import load_dotenv
+
+load_dotenv()
+# Trice bot auth token must be the same as in config.conf for the tricebot
+# is whitespace sensitive
+TRICE_BOT_AUTH_TOKEN = os.getenv('TRICE_BOT_AUTH_TOKEN')
+# This is the external URL of the tricebot for replay downloads, this is different
+# to the apiURL which is a loopback address or internal IP address allowing for
+# nginx or similar to be setup.
+EXTERN_URL = os.getenv('EXTERN_URL')
+API_URL = os.getenv('API_URL')
+
+#init trice bot object
+trice_bot = TriceBot(TRICE_BOT_AUTH_TOKEN, apiURL=API_URL, externURL=EXTERN_URL)
 
 
 """
@@ -22,8 +38,11 @@ from .deck import deck
     It also holds certain metadata about the tournament, such as the tournament's name and host guild's name.
 """
 class tournament:
-    def __init__( self, a_tournName: str, a_hostGuildName: str, a_format: str = "EDH" ):
-        self.tournName = a_tournName
+    def __init__( self, a_tournName: str, a_hostGuildName: str, trice_enabled: bool = False, a_format: str = "EDH", spectators_allowed: bool = True, spectators_need_password: bool = False, spectators_can_chat : bool = False, spectators_can_see_hands: bool = False, only_registered: bool = True):     
+        self.tournName = a_tournName   
+        #Safety Checks!!
+        self.tournName.replace("\.\./", "")
+        
         self.hostGuildName = a_hostGuildName
         self.format    = a_format
         
@@ -57,7 +76,15 @@ class tournament:
         self.players  = {}
         
         self.matches = []
-    
+        
+        #Create bot class and store the game creation settings
+        self.triceBotEnabled = trice_enabled
+        self.spectators_allowed = spectators_allowed
+        self.spectators_need_password = spectators_need_password 
+        self.spectators_can_chat = spectators_can_chat 
+        self.spectators_can_see_hands = spectators_can_see_hands 
+        self.only_registered = only_registered
+            
     def isPlanned( self ) -> bool:
         return not ( self.tournStarted or self.tournEnded or self.tournCancel )
     
@@ -183,6 +210,10 @@ class tournament:
                 digest.add_field( name="Winner", value=Match.winner )
         if len(Match.confirmedPlayers) != 0:
             digest.add_field( name="Confirmed Players", value=", ".join( [ self.players[plyr].discordUser.mention for plyr in Match.confirmedPlayers ] ) )
+            
+        if Match.triceMatch:
+            digest.addfield( name="Tricebot Match", value = ("Replay at" + replayURL) )
+            
         return digest
     
     # ---------------- Player Accessors ---------------- 
@@ -405,15 +436,50 @@ class tournament:
             matchCategory = discord.utils.get( self.guild.categories, name="Matches" ) 
             if len(matchCategory.channels) >= 50:
                 matchCategory = category=discord.utils.get( self.guild.categories, name="More Matches" ) 
-            newMatch.VC    = await matchCategory.create_voice_channel( name=f'{self.tournName} Match {newMatch.matchNumber}', overwrites=overwrites ) 
+                
+            #Save replay into a folder on the bot end
+            game_name: str = f'{self.tournName}/Match {newMatch.matchNumber}'
+            
+            newMatch.VC    = await matchCategory.create_voice_channel( name=game_name, overwrites=overwrites ) 
             newMatch.role  = matchRole
             newMatch.timer = threading.Thread( target=self.matchTimer, args=(newMatch,) )
-            newMatch.timer.start( )
-            newMatch.saveXML()
             
             message = f'\n{matchRole.mention} of {self.tournName}, you have been paired. A voice channel has been created for you. Below is information about your opponents.\n'
-            embed   = discord.Embed( )
-        
+            embed   = discord.Embed( )   
+            
+            if(self.triceBotEnabled):                        
+                #Try to create the game
+                creation_success: bool = False
+                replay_download_link: str = ""
+                game_id: int = -1
+                tries: int = 0
+                max_tries: int = 3
+                
+                game_password: str = "game-" + str(newMatch.matchNumber)
+                
+                #Try up to three times
+                while not creation_success and tries < max_tries:
+                    game_made = trice_bot.createGame(game_name, game_password, len(a_plyrs), self.spectators_allowed, self.spectators_need_password, self.spectators_can_chat, self.spectators_can_see_hands, self.only_registered)
+                    
+                    creation_success = game_made.success
+                    replay_download_link = trice_bot.getDownloadLink(game_made.replayName)
+                    game_id = game_made.gameID
+                    tries+=1
+                    
+                if creation_success:
+                    #Game was made
+                    newMatch.triceMatch = True
+                    newMatch.gameID = game_id
+                    newMatch.replayURL = replay_download_link
+                    
+                    message += "A cockatrice game was automatically made for you it is called " + game_name 
+                    message += " and has a password of `" + game_password + "`\n"
+                
+                    #TODO: move replay download link?
+                    message +="Replay download link " + replay_download_link + " (available on game end)\n"
+                else:
+                    #Game was not made
+                    message += "A cockatrice game was not automatically made for you.\n"
         for plyr in a_plyrs:
             self.removePlayerFromQueue( plyr )
             self.players[plyr].matches.append( newMatch )
@@ -427,6 +493,20 @@ class tournament:
         
         if type( self.guild ) is discord.Guild:
             await self.pairingsChannel.send( content=message, embed=embed )
+            
+        newMatch.timer.start( )
+        newMatch.saveXML()
+    
+    # See tricebot.py for retun details
+    # copy pasta of them is here. accurate as of 25/04/21
+    
+    #  1 if success
+    #  0 auth token is bad or error404 or network issue
+    # -1 if player not found
+    # -2 if an unknown error occurred
+    def kickTricePlayer(self, a_matchNum, playerName):
+        match = self.matches[a_matchNum - 1]
+        return trice_bot.kickPlayer(match.gameID, playerName)
     
     def addBye( self, a_plyr: str ) -> None:
         self.removePlayerFromQueue( a_plyr )
@@ -635,6 +715,15 @@ class tournament:
         digest += f'\t<status started="{toSafeXML(self.tournStarted)}" ended="{self.tournEnded}" canceled="{toSafeXML(self.tournCancel)}"/>\n'
         digest += f'\t<deckCount>{toSafeXML(self.deckCount)}</deckCount>\n'
         digest += f'\t<matchLength>{toSafeXML(self.matchLength)}</matchLength>\n'
+        
+        # Save tricebot settings under a tricebot tag
+        digest += f'\t\t<triceBotEnabled>{toSafeXML(self.triceBotEnabled)}</triceBotEnabled>\n'
+        digest += f'\t\t<spectatorsAllowed>{toSafeXML(self.spectators_allowed)}</spectatorsAllowed>\n'
+        digest += f'\t\t<spectatorsNeedPassword>{toSafeXML(self.spectators_need_password)}</spectatorsNeedPassword>\n'
+        digest += f'\t\t<spectatorsCanChat>{toSafeXML(self.spectators_can_chat)}</spectatorsCanChat>\n'
+        digest += f'\t\t<spectatorsCanSeeHands>{toSafeXML(self.spectators_can_see_hands)}</spectatorsCanSeeHands>\n'
+        digest += f'\t\t<onlyRegistered>{toSafeXML(self.only_registered)}</onlyRegistered>\n'
+
         digest += f'\t<queue size="{toSafeXML(self.playersPerMatch)}" threshold="{toSafeXML(self.pairingsThreshold)}">\n'
         for level in range(len(self.queue)):
             for plyr in self.queue[level]:
@@ -681,6 +770,14 @@ class tournament:
         self.roleID    = int( fromXML(tournRoot.find( 'role' ).attrib["id"]) )
         self.format    = fromXML(tournRoot.find( 'format' ).text)
         self.deckCount = int( fromXML(tournRoot.find( 'deckCount' ).text) )
+        
+        # Load tricebot settings
+        self.triceBotEnabled = str_to_bool ( fromXML(tournRoot.find('triceBotEnabled').text) )
+        self.spectators_allowed = str_to_bool ( fromXML(tournRoot.find('spectatorsAllowed').text) )
+        self.spectators_need_password = str_to_bool ( fromXML(tournRoot.find('spectatorsNeedPassword').text) )
+        self.spectators_can_chat = str_to_bool ( fromXML(tournRoot.find('spectatorsCanChat').text) )
+        self.spectators_can_see_hands = str_to_bool ( fromXML(tournRoot.find('spectatorsCanSeeHands').text) )
+        self.only_registered = str_to_bool ( fromXML(tournRoot.find('onlyRegistered').text) )
 
         self.regOpen      = str_to_bool( fromXML(tournRoot.find( 'regOpen' ).text ))
         self.tournStarted = str_to_bool( fromXML(tournRoot.find( 'status' ).attrib['started'] ))
@@ -694,6 +791,7 @@ class tournament:
         acts    = tournRoot.find( 'queueActivity' ).findall( 'event' )
         for act in acts:
             self.queueActivity.append( ( fromXML( act.attrib['player'] ), fromXML(act.attrib['time'] ) ) )
+
         players = tournRoot.find( 'queue' ).findall( 'player' )
         maxLevel = 1
         for plyr in players:
