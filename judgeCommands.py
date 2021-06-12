@@ -422,9 +422,7 @@ async def triceBotUpdatePlayer( ctx, tourn = "", mtch = "" ):
     mtch  =  mtch.strip()
         
     if await isPrivateMessage( ctx ): return
-
-    adminMention = getTournamentAdminMention( ctx.message.guild )
-    if not await isTournamentAdmin( ctx ): return
+    if not await isAdmin( ctx ): return
     if tourn == "" or mtch == "":
         await ctx.send( f'{mention}, you did not provide enough information. You need to specify a tournament and a player.' )
         return
@@ -471,9 +469,7 @@ async def triceBotUpdatePlayer( ctx, tourn = "", mtch = "", oldPlyrName = "", ne
     newTriceName = newTriceName.strip()
         
     if await isPrivateMessage( ctx ): return
-
-    adminMention = getTournamentAdminMention( ctx.message.guild )
-    if not await isTournamentAdmin( ctx ): return
+    if not await isAdmin( ctx ): return
     if tourn == "" or mtch == "" or oldPlyrName == "" or newTriceName == "":
         await ctx.send( f'{mention}, you did not provide enough information. You need to specify a tournament and a player.' )
         return
@@ -534,3 +530,54 @@ async def triceBotUpdatePlayer( ctx, tourn = "", mtch = "", oldPlyrName = "", ne
         await ctx.send( f'{mention}, the game was not found and the player deck information was not updated, no action was taken.' )
     elif not result.playerFound:
         await ctx.send( f'{mention}, the player was not found in the player deck information, no action was taken. If there are multiple players with no cockatrice names then you can ignore this error as they are still able to join.' )
+
+
+
+commandSnippets["tricebot-kick-player"] = "- tricebot-kick-player : Kicks a player from a cockatrice match when tricebot is enabled for that match" 
+commandCategories["day-of"].append("tricebot-kick-player")
+@bot.command(name='tricebot-kick-player')
+async def tricebotKickPlayer( ctx, tourn = "", mtch = "", playerName = "" ):
+    mention = ctx.message.author.mention
+    tourn = tourn.strip()
+    mtch  =  mtch.strip()
+    playerName = playerName.strip()
+
+    if await isPrivateMessage( ctx ): return
+    if not await isAdmin( ctx ): return
+    if tourn == "" or mtch == "":
+        await ctx.send( f'{mention}, you did not provide enough information. You need to specify a tournament and a player.' )
+        return
+    if not await checkTournExists( tourn, ctx ): return
+    if not await correctGuild( tourn, ctx ): return
+    if await isTournDead( tourn, ctx ): return
+    
+    try:
+        mtch = int( mtch )
+    except:
+        await ctx.send( f'{mention}, you did not provide a match number. Please specify a match number using digits.' )
+        return
+    
+    if mtch > len(tournaments[tourn].matches):
+        await ctx.send( f'{mention}, the match number that you specified is greater than the number of matches. Double check the match number.' )
+        return
+    
+    
+    match = tournaments[tourn].matches[mtch - 1]
+    
+    if not match.triceMatch:
+        await ctx.send( f'{mention}, that match is not a match with tricebot enabled.' )
+        return
+    
+    result = tournaments[tourn].kickTricePlayer(match.gameID, playerName)    
+    
+    #  1 success
+    #  0 auth token is bad or error404 or network issue
+    # -1 player not found
+    # -2 an unknown error occurred
+    
+    if result == 1:
+        await ctx.send( f'{mention}, "{playerName}" was kicked from match {mtch}.' )
+    elif result == -1:
+        await ctx.send( f'{mention}, "{playerName}" was not found in match {mtch}.' )
+    else:
+        await ctx.send( f'{mention}, An error has occured whilst kicking "{playerName}" from match {mtch}.' )   

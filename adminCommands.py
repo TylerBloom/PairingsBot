@@ -576,58 +576,6 @@ async def viewQueue( ctx, tourn = None ):
         
     await ctx.send( f'{mention}, here is the current matchmaking queue for {tourn}:', embed=embed )
 
-
-commandSnippets["tricebot-kick-player"] = "- tricebot-kick-player : Kicks a player from a cockatrice match when tricebot is enabled for that match" 
-commandCategories["day-of"].append("tricebot-kick-player")
-@bot.command(name='tricebot-kick-player')
-async def tricebotKickPlayer( ctx, tourn = "", mtch = "", playerName = "" ):
-    mention = ctx.message.author.mention
-    tourn = tourn.strip()
-    mtch  =  mtch.strip()
-    playerName = playerName.strip()
-
-    if await isPrivateMessage( ctx ): return
-
-    adminMention = getTournamentAdminMention( ctx.message.guild )
-    if not await isTournamentAdmin( ctx ): return
-    if tourn == "" or mtch == "":
-        await ctx.send( f'{mention}, you did not provide enough information. You need to specify a tournament and a player.' )
-        return
-    if not await checkTournExists( tourn, ctx ): return
-    if not await correctGuild( tourn, ctx ): return
-    if await isTournDead( tourn, ctx ): return
-    
-    try:
-        mtch = int( mtch )
-    except:
-        await ctx.send( f'{mention}, you did not provide a match number. Please specify a match number using digits.' )
-        return
-    
-    if mtch > len(tournaments[tourn].matches):
-        await ctx.send( f'{mention}, the match number that you specified is greater than the number of matches. Double check the match number.' )
-        return
-    
-    
-    match = tournaments[tourn].matches[mtch - 1]
-    
-    if not match.triceMatch:
-        await ctx.send( f'{mention}, that match is not a match with tricebot enabled.' )
-        return
-    
-    result = tournaments[tourn].kickTricePlayer(match.gameID, playerName)    
-    
-    #  1 success
-    #  0 auth token is bad or error404 or network issue
-    # -1 player not found
-    # -2 an unknown error occurred
-    
-    if result == 1:
-        await ctx.send( f'{mention}, "{playerName}" was kicked from match {mtch}.' )
-    elif result == -1:
-        await ctx.send( f'{mention}, "{playerName}" was not found in match {mtch}.' )
-    else:
-        await ctx.send( f'{mention}, An error has occured whilst kicking "{playerName}" from match {mtch}.' )        
-        
         
 """
 
