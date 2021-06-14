@@ -540,7 +540,7 @@ async def adminRemoveMatch( ctx, tourn = None, mtch = None ):
     await ctx.send( f'{adminMention}, in order to remove match #{mtch}, confirmation is needed. {mention}, are you sure you want to remove this match (!yes/!no)?' )
 
 
-commandSnippets["view-queue"] = "- view-queue : Prints the currect matchmaking queue" 
+commandSnippets["view-queue"] = "- view-queue : Prints the current matchmaking queue" 
 commandCategories["day-of"].append("view-queue")
 @bot.command(name='view-queue')
 async def viewQueue( ctx, tourn = None ):
@@ -550,7 +550,7 @@ async def viewQueue( ctx, tourn = None ):
     adminMention = getTournamentAdminMention( ctx.message.guild )
     if not await isTournamentAdmin( ctx ): return
     if tourn is None:
-        await ctx.send( f'{mention}, you did not provide enough information. You need to specify a tournament to view the queue.' )
+        await ctx.send( f'{mention}, you did not provide enough information. You need to specify a tournament to view the dqueue.' )
         return
     if not await checkTournExists( tourn, ctx ): return
     if not await correctGuild( tourn, ctx ): return
@@ -576,7 +576,47 @@ async def viewQueue( ctx, tourn = None ):
         
     await ctx.send( f'{mention}, here is the current matchmaking queue for {tourn}:', embed=embed )
 
-        
+commandSnippets["download-replays"] = "- download-replays : Downloads all replays for a tournament" 
+commandCategories["management"].append("download-replays")
+@bot.command(name='download-replays')
+async def downloadReplays( ctx, tourn = None ):
+    mention = ctx.message.author.mention
+    if await isPrivateMessage( ctx ): return
+
+    adminMention = getTournamentAdminMention( ctx.message.guild )
+    if not await isTournamentAdmin( ctx ): return
+    if tourn is None:
+        await ctx.send( f'{mention}, you did not provide enough information. You need to specify a tournament to view the dqueue.' )
+        return
+    if not await checkTournExists( tourn, ctx ): return
+    if not await correctGuild( tourn, ctx ): return
+    if await isTournDead( tourn, ctx ): return
+
+    replayURLs = []
+
+    # Iterate over matches
+    for match in tournaments[tourn].matches:
+        if match.triceMatch and match.replayURL != "":
+            replayURLs.append(replayURL)
+    
+    if len(replayURLs) == 0:
+        await ctx.send( f'{mention}, there were no replays to download.' )
+        return
+    
+    # Download replays
+    replaysNotFound = []
+    replayFile = tournament.trice_bot.downloadReplays(replayURLs, replaysNotFound)
+    if replayFile == None:
+        await ctx.send( f'{mention}, an error occurred downloading the replays.' )
+        return
+    
+    message = replaysNotFound.join("\n - ")
+    if message != "":
+        message = "The following replays were unable to be downloaded:\n" + message
+    
+    await ctx.send( f'{mention}, here are the replays for {tourn}.\n{message}', file=replayFile )
+    replayFile.close()
+    
 """
 
 @bot.command(name='tournament-report')
